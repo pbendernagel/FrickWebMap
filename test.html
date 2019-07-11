@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Starter map</title>
+    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
+    <style>
+
+        body {
+          color:#404040;
+          font:400 15px/22px 'Source Sans Pro', 'Helvetica Neue', Sans-serif;
+          margin:0;
+          padding:0;
+          -webkit-font-smoothing:antialiased;
+        }
+
+        * {
+          -webkit-box-sizing:border-box;
+          -moz-box-sizing:border-box;
+          box-sizing:border-box;
+        }
+
+        .sidebar {
+          width:20%;
+        }
+
+        .pad2 {
+          padding:20px;
+        }
+
+        .map {
+          position:absolute;
+          left:20%;
+          width:80%;
+          top:0;bottom:0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class='sidebar'>
+      <div class='heading'>
+        <h1>Research Trips</h1>
+      </div>
+      <div id='listings' class='listings'></div>
+    </div>
+    <div id='map' class='map'> </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
+    <!-- MAP SCRIPT -->
+    <script>
+        var trip_json = $.ajax({
+          url:"https://raw.githubusercontent.com/pbendernagel/FrickWebMap/master/master_spreadsheet2.geojson",
+          dataType: "json",
+          success: console.log("Trip data successfully loaded."),
+          error: function (xhr) {
+            alert(xhr.statusText)
+          }
+        })
+        // Specify that this code should run once the trip data request is complete
+        $.when(trip_json).done(function() {
+            var map = L.map('map')
+                .setView([37.8, -96], 4.75);
+            var basemap = L.tileLayer('http://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="http://cartodb.com/attributions">CartoDB</a>',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+            // Set up styles for subway lines
+            function TripStyle(feature) {
+              var colorToUse;
+              var point = feature.properties.trip;
+
+              if (point === "North Carolina 1960") colorToUse = "#46C7FA";
+              else if (point === "North Carolina 1961") colorToUse = "#E81D1A";
+              else if (point === "California 1950") colorToUse = "#4161BA";
+              else if (point === "Maryland 1933") colorToUse = "#599C65";
+              else if (point === "Kentucky 1933") colorToUse = "#65018A";
+              else if (point === "Nantucket 1933") colorToUse = "#FAF739";
+              else if (point === "New Orleans 1933") colorToUse = "#f538f5";
+              else colorToUse = "#000000";
+
+              return {
+                "color": colorToUse,
+                "radius":5,
+                "weight":3
+              };
+            }
+            // Add requested external GeoJSON to map
+            var trips = L.geoJSON(trip_json.responseJSON, {
+              pointToLayer: function (feature, latlng) {
+                return L.circleMarker(latlng, TripStyle(feature));
+              },
+              onEachFeature:function(feature,layer){
+                layer.bindPopup("<p>Collection: "+feature.properties.collector_institution+"</br>Address: "+feature.properties.address+"</p>");
+                }
+        }).addTo(map);
+        });
+
+
+    </script>
+</body>
+
+</html>
